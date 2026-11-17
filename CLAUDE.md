@@ -9,6 +9,8 @@
 ## What it is
 An Android to-do list with RPG levels. Joseph uses it as his work to-do list. Type a quest, check it off, rate difficulty 1–5; the rating is the XP. The hero levels up and unlocks nine gear looks (LV 1, 3, 5, 8, 11, 15, 20, 25, 30).
 
+First launch: hero creator (body, skin, hair, name), then a 4-step tutorial on the player's own first quest (`state.tut`: add → check → rate → xp → done). The hero is layered at runtime from `img/doll/` parts (`heroParts` in app.js); gear tiers are data in `TIERS`.
+
 A web UI (`app/src/main/assets/www`: index.html, style.css, app.js) in a WebView. `MainActivity.java` provides `window.Android.load/save/exportBackup/importBackup`. No androidx, no network, no permissions.
 
 ## Hard rules
@@ -36,3 +38,4 @@ A web UI (`app/src/main/assets/www`: index.html, style.css, app.js) in a WebView
 - **WebView app, not native.** The whole UI is testable in headless Chrome, and the only build dependency is the Android Gradle plugin.
 - **Gradle comes from the setup-gradle action** (`gradle-version: 8.9`), so there's no wrapper jar in the repo.
 - **License:** not chosen yet; ask Joseph (MAINTENANCE.md).
+- **Skin tones are recolors** of the CC0 bodies (colors only), made without an explicit ask from Joseph; flagged to him in the 0.2.0 handoff. Remove `_s1`–`_s4` if he says no.

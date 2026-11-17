@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+- Hero creator on first launch: body (6), skin tone (5), hair (14 or none) and a name. Change it any time from the Hero tab or the ☰ menu.
+- Tutorial on your first quest: add it, tap the box, rate it, see the XP bar. Skip any time; replay it from the ☰ menu.
+- The hero is now drawn from layered parts, so gear sits on whatever hero you made.
+- Saves and backups from 0.1.x keep working: they skip the tutorial and ask you to make a hero once.
+
 ## 0.1.1
 - Test builds: every push to main makes a "Quest Log TEST" APK (Actions artifact) that installs beside the real app. It uses a throwaway key, so a newer test build needs the old one uninstalled first; export a backup before doing that.
 - Pushes to main no longer fail while the signing key isn't set up yet; tags still require it.

@@ -176,6 +176,53 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
 .credits { font-size: 16px; color: var(--dim); user-select: text; }
 .credits p { margin: 0 0 8px; }
 .levelup-box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 28px; text-align: center; animation: pop 0.3s steps(4); }
+/* Checklist progress, steps, templates */
+.q-steps { color: var(--dim); }
+.steps, .tpl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.step, .tpl { display: flex; align-items: center; gap: 8px; }
+.step-check { width: 48px; height: 48px; flex: none; display: grid; place-items: center; }
+.step-check::before { content: ""; width: 26px; height: 26px; border: 3px solid var(--edge); border-radius: 3px; background: var(--shadow); }
+.step-check.on::before { background: var(--r1); box-shadow: inset 0 0 0 3px var(--shadow); }
+.step-t { flex: 1; min-width: 0; overflow-wrap: anywhere; user-select: text; }
+.step.done .step-t { color: var(--dim); text-decoration: line-through; }
+.step-x { width: 48px; height: 48px; flex: none; color: var(--dim); font-size: 22px; font-family: system-ui, sans-serif; }
+.step-add { display: flex; gap: 8px; }
+.step-add input, .log-tools input {
+  flex: 1; min-width: 0; min-height: 48px; padding: 10px; background: var(--shadow); border: 2px solid var(--field-edge); border-radius: 3px; outline: none; user-select: text;
+}
+.step-add input:focus, .log-tools input:focus { border-color: var(--ink); }
+.tpl-add { flex: 1; min-width: 0; min-height: 48px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+  padding: 8px 10px; text-align: left; background: var(--win-hi); border: 2px solid var(--edge-in); border-radius: 3px; }
+.tpl-add .t { overflow-wrap: anywhere; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:disabled:active { transform: none; }
+
+/* Log tools and weekly summary */
+.log-tools { display: flex; gap: 8px; padding: 8px; }
+.result-count { margin: 0 4px 10px; }
+.week-nav { display: flex; align-items: center; gap: 10px; }
+.week-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.week-body { display: flex; flex-direction: column; gap: 6px; max-height: 45vh; overflow-y: auto; }
+.week-day { margin-top: 8px; }
+.week-item { display: flex; align-items: center; gap: 10px; }
+.week-item .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Loot and badges */
+.label-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.span-all { grid-column: 1 / -1; line-height: 1.6; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+.badge-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; text-align: center;
+  background: var(--shadow); border: 2px solid var(--edge-in); border-radius: 3px; }
+.badge-card img { width: 48px; height: 48px; }
+.badge-card.locked img { filter: brightness(0) invert(0.32); }
+.badge-card span { line-height: 1.4; }
+
+/* Toasts */
+.toasts { position: fixed; left: 12px; right: 12px; bottom: 104px; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.toast { display: flex; align-items: center; gap: 10px; max-width: 600px; border-color: var(--gold); animation: pop 0.25s steps(3); transition: opacity 0.3s; }
+.toast img { width: 32px; height: 32px; }
+.toast.out { opacity: 0; }
+
 /* Hero creator */
 .creator-box { width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px; }
 .cr-row { display: flex; align-items: center; gap: 10px; width: 100%; }

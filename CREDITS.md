@@ -9,12 +9,18 @@ Every third-party asset, with its source and license. The app shows the same lis
 - `img/doll/`: the hero, stacked in the app from `player/` parts, unedited except skin:
   - Bodies: `base/human_m`, `human_f`, `elf_m`, `elf_f`, `dwarf_m`, `dwarf_f`. `_s0` is the original; `_s1`–`_s4` are **recolors of the skin colors only** (no pixels moved) to add skin tones, because the set's darker human bodies are on its unclear-license list.
   - Hair: `brown1`, `brown2`, `elf_black`, `fem_black`, `fem_red`, `fem_white`, `fem_yellow`, `knot_red`, `pigtail_red`, `pigtails_brown`, `pigtails_yellow`, `ponytail_yellow`, `djinn1`, `djinn2`
+  - Cosmetic loot (45): capes `cloak/black`, `brown`, `cyan`, `gray`, `magenta`, `white`, `yellow`; hats `head/cap_blue`, `cap_black1`, `feather_blue`, `feather_green`, `feather_red`, `feather_white`, `feather_yellow`, `hood_green`, `hood_red`, `hood_white`, `hood_orange`, `wizard_blue`, `wizard_purple`, `wizard_red`, `wizard_darkgreen`, `straw`, `band_red`, `band_blue`, `viking_brown1`, `viking_gold`, `crown_gold2`, `healer`, `hat_black`; weapons `hand1/quarterstaff`, `mace`, `spear`, `axe_small`, `rapier`, `scimitar`, `katana_slant`, `sword_thief`, `staff_mage`, `trident`, `whip`, `sickle`, `war_axe`, `morningstar`, `falchion`
   - Gear: `legs/pants_brown`, `legs/leg_armour03`, `body/shirt_white1`, `body/leather_jacket`, `body/jacket_stud`, `body/half_plate`, `body/plate_black`, `boots/middle_ybrown`, `boots/middle_gray`, `gloves/glove_brown`, `gloves/glove_gray`, `head/hood_gray`, `head/helm_plume`, `head/crown_gold1`, `cloak/red`, `cloak/blue`, `hand1/knife`, `hand1/short_sword`, `hand1/long_sword_slant`, `hand1/heavy_sword`, `hand2/buckler_round`, `hand2/shield_kite1`
 - `img/scroll.png` and the launcher icon: `item/scroll/scroll` (icon: scaled up on a navy square)
 - `img/book.png`: `item/book/parchment`
 - `img/floor.png`: `dngn/floor/rect_gray0`
+- `img/badge/`: `item/misc/misc_orb` (orb), `item/gold/16` (gold), `item/potion/golden` (potion), `item/amulet/celtic_yellow` (amulet), `item/book/metal_green` (book)
 
 CC0 doesn't require credit; we keep it anyway.
+
+## Sounds
+**Interface Sounds** by Kenney (kenney.nl). License: CC0 1.0, `snd/Kenney_Interface_Sounds_LICENSE.txt`. From the CC0 GitHub copy at github.com/Calinou/kenney-interface-sounds. Converted from WAV to Ogg Vorbis, no other edits.
+- `snd/complete.ogg` (confirmation_001), `snd/levelup.ogg` (confirmation_004), `snd/loot.ogg` (glass_001), `snd/badge.ogg` (maximize_006)
 
 ## Fonts
 Bundled with the app; each license file ships next to its font.

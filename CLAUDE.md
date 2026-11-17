@@ -9,7 +9,9 @@
 ## What it is
 An Android to-do list with RPG levels. Joseph uses it as his work to-do list. Type a quest, check it off, rate difficulty 1–5; the rating is the XP. The hero levels up and unlocks nine gear looks (LV 1, 3, 5, 8, 11, 15, 20, 25, 30).
 
-Each quest has `text` and an optional multi-line `note`; tapping a quest (list or log) opens it to edit both.
+Each quest has `text`, an optional multi-line `note`, a checklist (`steps: [{t, d}]`) and, once finished, an optional cosmetic `drop`. Tapping a quest (list or log) opens it; closing the sheet any way saves (`onSheetClose`). Templates (`state.templates`) re-add a quest with its steps reset. Shared text arrives via `window.onShared` (Android `ACTION_SEND`, or `takeShared()` at startup). The Log has search and a weekly summary with Copy (`Android.copy`).
+
+Loot (`LOOT`, 45 CC0 items) and badges (`BADGES`) are derived from finished quests, never stored as totals. A quest's drop is decided by a hash of its id (first ever quest always drops), so undo/redo can't farm. Worn items live in `hero.equip` and are dropped by `fixEquip` if no longer owned. Sound (`snd/`, Kenney CC0) and haptics (`Android.haptic`, no permission) are toggles in `state.prefs`.
 
 First launch: title screen (`#welcome`), hero creator (body, skin, hair, name), then a 12-step guided tour (`state.tut`, order in `TUT_STEPS`, text and targets in `COACH`): add → note → noteSave → check → rate → xp → hero → gear → log → entry → menu → end → done. Steps advance when the player does the thing or taps OK; `repairTut` puts it back on track if they wander off. The hero is layered at runtime from `img/doll/` parts (`heroParts` in app.js); gear tiers are data in `TIERS`.
 
@@ -18,7 +20,8 @@ A web UI (`app/src/main/assets/www`: index.html, style.css, app.js) in a WebView
 ## Hard rules
 - **Nothing punishes being late.** No due dates, streaks, decay or penalties (Joseph's call).
 - **No personal or workplace details** in the app, docs, examples or tests. It has to work as an IT to-do list, but it isn't themed around any job.
-- XP is always worked out from finished quests. Never store a running total (two places = drift).
+- XP is always worked out from finished quests. Never store a running total (two places = drift). Loot never touches XP.
+- Badge labels describe the condition plainly ("100 QUESTS"). Creative names are Joseph's to write; don't invent them.
 - Saves go through `MainActivity.writeData` (temp file, then rename).
 - All art human-made. The current art is CC0 Dungeon Crawl Stone Soup tiles, the same open set QuestScroll used. Check new tiles against `TILES_UNDER_UNKNOWN_LICENSE.md` in crawl/tiles and credit them in CREDITS.md and the app menu.
 - Keep `VERSION` and `app.js` `VERSION` the same (`tests/web/version_check.js` fails otherwise).

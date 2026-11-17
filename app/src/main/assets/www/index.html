@@ -21,6 +21,7 @@
     <section id="view-quests" class="view">
       <form id="addForm" class="win add" autocomplete="off">
         <input id="newQuest" type="text" maxlength="300" placeholder="New quest" enterkeyhint="done">
+        <button id="templatesBtn" class="btn px" type="button" aria-label="Templates">★</button>
         <button class="btn px" type="submit" aria-label="Add quest">+</button>
       </form>
       <ul id="questList" class="list"></ul>
@@ -45,9 +46,21 @@
         <div class="px dim small label">GEAR</div>
         <div id="gearGrid" class="gear"></div>
       </div>
+      <div class="win">
+        <div class="label-row"><span class="px dim small">LOOT</span><span id="lootCount" class="px small gold"></span></div>
+        <div id="lootGrid" class="gear"></div>
+      </div>
+      <div class="win">
+        <div class="label-row"><span class="px dim small">BADGES</span><span id="badgeCount" class="px small gold"></span></div>
+        <div id="badgeGrid" class="badges"></div>
+      </div>
     </section>
 
     <section id="view-log" class="view" hidden>
+      <div class="win log-tools">
+        <input id="logSearch" type="search" maxlength="100" placeholder="Search finished quests" aria-label="Search finished quests" autocomplete="off">
+        <button id="weekBtn" class="btn px small" type="button">WEEK</button>
+      </div>
       <div id="logList"></div>
     </section>
   </main>
@@ -80,10 +93,24 @@
     <div class="cr-row"><button class="btn px arrow" type="button" data-part="body" data-step="-1" aria-label="Previous body">&lt;</button><div class="cr-label"><span class="px small dim">BODY</span><span id="crBody" class="px"></span></div><button class="btn px arrow" type="button" data-part="body" data-step="1" aria-label="Next body">&gt;</button></div>
     <div class="cr-row"><button class="btn px arrow" type="button" data-part="skin" data-step="-1" aria-label="Previous skin tone">&lt;</button><div class="cr-label"><span class="px small dim">SKIN</span><span id="crSkin" class="px"></span></div><button class="btn px arrow" type="button" data-part="skin" data-step="1" aria-label="Next skin tone">&gt;</button></div>
     <div class="cr-row"><button class="btn px arrow" type="button" data-part="hair" data-step="-1" aria-label="Previous hair">&lt;</button><div class="cr-label"><span class="px small dim">HAIR</span><span id="crHair" class="px"></span></div><button class="btn px arrow" type="button" data-part="hair" data-step="1" aria-label="Next hair">&gt;</button></div>
+    <div class="cr-row" id="crRow-cloak"><button class="btn px arrow" type="button" data-part="cloak" data-step="-1" aria-label="Previous cape">&lt;</button><div class="cr-label"><span class="px small dim">CAPE</span><span id="crEq-cloak" class="px"></span></div><button class="btn px arrow" type="button" data-part="cloak" data-step="1" aria-label="Next cape">&gt;</button></div>
+    <div class="cr-row" id="crRow-head"><button class="btn px arrow" type="button" data-part="head" data-step="-1" aria-label="Previous hat">&lt;</button><div class="cr-label"><span class="px small dim">HAT</span><span id="crEq-head" class="px"></span></div><button class="btn px arrow" type="button" data-part="head" data-step="1" aria-label="Next hat">&gt;</button></div>
+    <div class="cr-row" id="crRow-hand1"><button class="btn px arrow" type="button" data-part="hand1" data-step="-1" aria-label="Previous weapon">&lt;</button><div class="cr-label"><span class="px small dim">WEAPON</span><span id="crEq-hand1" class="px"></span></div><button class="btn px arrow" type="button" data-part="hand1" data-step="1" aria-label="Next weapon">&gt;</button></div>
     <label class="cr-name"><span class="px small dim">NAME</span><input id="crName" type="text" maxlength="14" placeholder="HERO" autocomplete="off"></label>
     <div class="sheet-row"><button id="crCancel" class="btn px small" type="button">CANCEL</button><button id="crDone" class="btn px small" type="button">START</button></div>
   </div>
 </div>
+
+<div id="loot" class="overlay center" hidden>
+  <div class="win levelup-box" role="alertdialog" aria-live="assertive" aria-labelledby="lootTitle">
+    <div id="lootTitle" class="px title gold">LOOT!</div>
+    <div id="lootHero" class="doll big" aria-hidden="true"></div>
+    <div id="lootWhat" class="px small"></div>
+    <div class="sheet-row"><button id="lootOk" class="btn px small" type="button">LATER</button><button id="lootWear" class="btn px small" type="button">WEAR IT</button></div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
 
 <div id="welcome" class="overlay center title-screen" hidden>
   <div class="welcome-box" role="dialog" aria-modal="true" aria-labelledby="wTitle">

@@ -2,6 +2,9 @@
 
 A to-do list with RPG levels, for Android. Type a quest, check it off, rate how hard it was from 1 to 5. That number is the XP. Your hero levels up and picks up new gear along the way.
 
+- Notes and checklists on any quest, templates for the ones that come back, and Share from any app to add one.
+- A weekly summary you can copy, and search across everything you've finished.
+- Cosmetic loot and badges along the way. Looks only; XP is always just your ratings.
 - No due dates, no streaks, nothing lost for finishing late.
 - Works offline. No account, no network access, no permissions.
 - Your quests live on your phone. Export a backup from the ☰ menu.

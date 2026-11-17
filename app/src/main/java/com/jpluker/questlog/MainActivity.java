@@ -1,9 +1,13 @@
 package com.jpluker.questlog;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -23,7 +27,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Quest Log is a web UI (assets/www) in a WebView. This activity only hosts it and gives it
- * three things a page can't do on its own: save to a file, export a backup, import a backup.
+ * what a page can't do on its own: save to a file, export and import backups, receive text
+ * shared from other apps, copy to the clipboard and play haptics.
  * No network access and no permissions.
  */
 public class MainActivity extends Activity {
@@ -35,6 +40,8 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private String pendingExport;
+    private String pendingShare;   // JSON {subject, text} from a share that started the app
+    private boolean pageReady;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +63,13 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return true; // the app never navigates away from its own page
             }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                pageReady = true;
+            }
         });
+        pendingShare = shareFrom(getIntent());
         webView.addJavascriptInterface(new Bridge(), "Android");
         setContentView(webView);
         webView.loadUrl("file:///android_asset/www/index.html");
@@ -69,6 +82,36 @@ public class MainActivity extends Activity {
             if (!"\"y\"".equals(value)) MainActivity.super.onBackPressed();
         });
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String share = shareFrom(intent);
+        if (share == null) return;
+        // The page asks for a pending share when it starts; if it's already running, hand it over now.
+        if (pageReady) callJs("onShared", "(" + share + ").subject, (" + share + ").text");
+        else pendingShare = share;
+    }
+
+    /** Text shared to Quest Log from another app, as JSON, or null if this intent isn't a share. */
+    private static String shareFrom(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return null;
+        String type = intent.getType();
+        if (type == null || !type.startsWith("text/")) return null;
+        CharSequence text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        if (text == null && subject == null) return null;
+        try {
+            JSONObject o = new JSONObject();
+            o.put("subject", subject == null ? "" : clip(subject, 1000));
+            o.put("text", text == null ? "" : clip(text.toString(), 20000));
+            return o.toString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String clip(String s, int max) { return s.length() > max ? s.substring(0, max) : s; }
 
     @Override
     protected void onDestroy() {
@@ -155,6 +198,34 @@ public class MainActivity extends Activity {
     private class Bridge {
         @JavascriptInterface
         public String load() { return readData(); }
+
+        /** A share that started the app, once; null after that. */
+        @JavascriptInterface
+        public String takeShared() {
+            String s = pendingShare;
+            pendingShare = null;
+            return s;
+        }
+
+        @JavascriptInterface
+        public void copy(String text) {
+            runOnUiThread(() -> {
+                ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                if (cm != null && text != null) cm.setPrimaryClip(ClipData.newPlainText("Quest Log", text));
+            });
+        }
+
+        /** Haptic tap through the view: follows the phone's touch-feedback setting, needs no permission. */
+        @JavascriptInterface
+        public void haptic(String kind) {
+            runOnUiThread(() -> {
+                int c = HapticFeedbackConstants.VIRTUAL_KEY;
+                if ("confirm".equals(kind)) {
+                    c = Build.VERSION.SDK_INT >= 30 ? HapticFeedbackConstants.CONFIRM : HapticFeedbackConstants.LONG_PRESS;
+                }
+                webView.performHapticFeedback(c);
+            });
+        }
 
         @JavascriptInterface
         public boolean save(String json) { return json != null && writeData(json); }

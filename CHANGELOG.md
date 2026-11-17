@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+- Notes on quests: tap a quest to open it and write notes (several lines, up to 4,000 characters). The first line shows under the quest in the list and the log.
+- Finished quests in the log open the same way, so notes stay readable after you're done.
+
 ## 0.2.0
 - Hero creator on first launch: body (6), skin tone (5), hair (14 or none) and a name. Change it any time from the Hero tab or the ☰ menu.
 - Tutorial on your first quest: add it, tap the box, rate it, see the XP bar. Skip any time; replay it from the ☰ menu.

@@ -93,7 +93,14 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
 .quest { position: relative; padding: 8px 10px; }
 .q-row { display: flex; align-items: center; gap: 10px; }
 .q-icon { width: 32px; height: 32px; flex: none; }
-.q-text { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; overflow-wrap: anywhere; padding: 4px 0; cursor: pointer; }
+.q-text { flex: 1; min-width: 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 2px; overflow-wrap: anywhere; padding: 4px 0; cursor: pointer; }
+.q-note { font-size: 16px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-note::before { content: "✎ "; }
+.sheet-box textarea.notes {
+  width: 100%; min-height: 140px; padding: 10px; resize: vertical; font: inherit; color: inherit; line-height: 1.35;
+  background: var(--shadow); border: 2px solid var(--field-edge); border-radius: 3px; outline: none; user-select: text;
+}
+.sheet-box textarea.notes:focus { border-color: var(--ink); }
 /* 48px tap target around a 34px box */
 .q-check { width: 48px; height: 48px; flex: none; display: grid; place-items: center; margin: -6px -6px -6px 0; }
 .q-check::before {
@@ -144,7 +151,7 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
   width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 3px; color: #10110f;
   font-family: "PressStart", monospace; font-size: 12px; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.3);
 }
-.entry .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.entry .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
 .entry .t { overflow-wrap: break-word; color: var(--dim); }
 .entry .undo { color: var(--dim); min-height: 48px; padding: 0 6px; }
 
@@ -189,7 +196,7 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
 @keyframes pop { from { transform: scale(0.6); } to { transform: scale(1); } }
 
 /* Visible focus for keyboards and switch access (DESIGN.md A8) */
-button:focus-visible, .q-text:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+button:focus-visible, .q-text:focus-visible, .entry .body:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .add input:focus-visible { border-color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {

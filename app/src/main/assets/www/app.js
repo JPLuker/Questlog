@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.2.0";
+  var VERSION = "0.3.0";
   var KEY = "questlog-data";
 
   /* ---------------- hero parts (img/doll) ---------------- */
@@ -51,7 +51,8 @@
     var tasks = d.tasks.filter(function (t) { return t && typeof t.text === "string" && t.id; }).map(function (t) {
       var r = Number(t.rating);
       return {
-        id: String(t.id), text: t.text.slice(0, 300), created: Number(t.created) || Date.now(),
+        id: String(t.id), text: t.text.slice(0, 300), note: typeof t.note === "string" ? t.note.slice(0, 4000) : "",
+        created: Number(t.created) || Date.now(),
         done: !!t.done && r >= 1 && r <= 5, rating: r >= 1 && r <= 5 ? Math.round(r) : null,
         doneAt: t.doneAt ? Number(t.doneAt) : null
       };
@@ -129,10 +130,7 @@
       var li = el("li", "win quest"); li.dataset.id = t.id;
       var row = el("div", "q-row");
       var icon = el("img", "q-icon"); icon.src = "img/scroll.png"; icon.alt = "";
-      var text = el("span", "q-text", t.text);
-      text.tabIndex = 0; text.setAttribute("role", "button");
-      text.onclick = function () { openEdit(t); };
-      text.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(t); } };
+      var text = questLabel(t, "q-text");
       var check = el("button", "q-check" + (rating === t.id ? " on" : "")); check.type = "button";
       check.setAttribute("aria-label", "Finish " + t.text);
       check.onclick = function () {
@@ -211,8 +209,7 @@
       g.items.forEach(function (t) {
         var e = el("div", "entry");
         e.appendChild(el("span", "badge r" + t.rating, String(t.rating)));
-        var body = el("div", "body");
-        body.appendChild(el("span", "t", t.text));
+        var body = questLabel(t, "body");
         body.appendChild(el("span", "px small dim", timeLabel(t.doneAt)));
         e.appendChild(body);
         var u = el("button", "undo px small", "UNDO"); u.type = "button";
@@ -242,7 +239,7 @@
 
   /* ---------------- actions ---------------- */
   function addQuest(text) {
-    state.tasks.push({ id: uid(), text: text, created: Date.now(), done: false, rating: null, doneAt: null });
+    state.tasks.push({ id: uid(), text: text, note: "", created: Date.now(), done: false, rating: null, doneAt: null });
     if (state.tut === "add") state.tut = "check";
     save(); render();
   }
@@ -288,11 +285,29 @@
 
   function button(label, cls, fn) { var b = el("button", "btn px small" + (cls ? " " + cls : ""), label); b.type = "button"; b.onclick = fn; return b; }
 
+  // A quest's title plus the first line of its notes. Tap to open the quest.
+  function questLabel(t, cls) {
+    var box = el("div", cls);
+    box.appendChild(el("span", "t", t.text));
+    var first = (t.note || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean)[0];
+    if (first) box.appendChild(el("span", "q-note", first));
+    box.tabIndex = 0; box.setAttribute("role", "button");
+    box.setAttribute("aria-label", t.text + (t.note ? ", has notes" : "") + ". Open");
+    box.onclick = function () { openEdit(t); };
+    box.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openEdit(t); } };
+    return box;
+  }
+
   function openEdit(t) {
     openSheet(function (b) {
-      b.appendChild(el("div", "px small dim", "EDIT QUEST"));
+      b.appendChild(el("div", "px small dim", "QUEST"));
       var input = el("input"); input.type = "text"; input.maxLength = 300; input.value = t.text;
+      input.setAttribute("aria-label", "Quest");
       b.appendChild(input);
+      b.appendChild(el("div", "px small dim", "NOTES"));
+      var notes = el("textarea", "notes"); notes.maxLength = 4000; notes.value = t.note || "";
+      notes.setAttribute("aria-label", "Notes"); notes.rows = 6;
+      b.appendChild(notes);
       var row = el("div", "sheet-row");
       row.appendChild(button("DELETE", "danger", function () {
         state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
@@ -300,11 +315,12 @@
       }));
       row.appendChild(button("SAVE", "", function () {
         var v = input.value.trim();
-        if (v) { t.text = v; save(); }
-        closeSheet(); render();
+        if (v) t.text = v;
+        t.note = notes.value.replace(/\s+$/, "");
+        save(); closeSheet(); render();
       }));
       b.appendChild(row);
-      setTimeout(function () { input.focus(); }, 50);
+      setTimeout(function () { notes.focus(); notes.selectionStart = notes.selectionEnd = notes.value.length; }, 50);
     });
   }
 

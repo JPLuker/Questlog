@@ -124,6 +124,27 @@ const check = (name, ok) => { console.log((ok ? "PASS " : "FAIL ") + name); if (
   await btns[1].click();
   check("edit saved", (await p.$eval(".quest .q-text", e => e.textContent)).includes("2nd floor"));
 
+  // Notes
+  await p.click(".quest .q-text");
+  await wait(150);
+  check("notes box opens focused", await p.evaluate(() => document.activeElement.classList.contains("notes")));
+  await p.type("#sheetBox textarea.notes", "\n  Ticket 4821\nCheck after the reboot\nCall back if it fails");
+  await p.screenshot({ path: SHOTS + "/n1_notes_edit.png" });
+  await (await p.$$("#sheetBox .btn"))[1].click();
+  check("first non-blank note line shows under the quest", (await p.$eval(".quest .q-note", e => e.textContent)) === "Ticket 4821");
+  check("title unchanged by notes", (await p.$eval(".quest .t", e => e.textContent)).includes("2nd floor"));
+  await p.screenshot({ path: SHOTS + "/n2_notes_list.png" });
+  await p.reload();
+  check("notes persist", (await p.evaluate(() => JSON.parse(localStorage.getItem("questlog-data")).tasks.find(t => t.note).note)) === "\n  Ticket 4821\nCheck after the reboot\nCall back if it fails");
+  await p.click(".quest .q-text");
+  check("notes reopen intact", (await p.$eval("#sheetBox textarea.notes", e => e.value)).includes("Call back if it fails"));
+  await p.$eval("#sheetBox textarea.notes", e => { e.value = "   "; });
+  await (await p.$$("#sheetBox .btn"))[1].click();
+  check("clearing notes removes the preview", (await p.$$(".quest .q-note")).length === 0);
+  await p.click(".quest .q-text");
+  await p.type("#sheetBox textarea.notes", "Toner is in the supply closet");
+  await (await p.$$("#sheetBox .btn"))[1].click();
+
   // persistence
   await p.reload();
   check("persists after reload", (await p.$$(".quest")).length === 1 && (await p.$eval("#hudLevel", e => e.textContent)) === "LV 2");
@@ -137,6 +158,9 @@ const check = (name, ok) => { console.log((ok ? "PASS " : "FAIL ") + name); if (
   // log tab + undo
   await p.click('.tab[data-view="log"]');
   check("log has 3 entries", (await p.$$(".entry")).length === 3);
+  await p.click(".entry .body");
+  check("log entry opens the quest with its notes", await p.$eval("#sheet", e => !e.hidden) && (await p.$eval("#sheetBox textarea.notes", e => e.value)) !== null);
+  await p.evaluate(() => window.onBack());
   await p.screenshot({ path: SHOTS + "/s5_log.png" });
   await p.click(".entry .undo");
   check("undo removes XP (LV back to 1)", (await p.$eval("#hudLevel", e => e.textContent)) === "LV 1");

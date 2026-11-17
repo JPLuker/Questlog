@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.0";
+  var VERSION = "0.4.0";
   var KEY = "questlog-data";
 
   /* ---------------- hero parts (img/doll) ---------------- */
@@ -22,7 +22,8 @@
     { lv: 30, set: { body: "plate_black", hand1: "heavy_sword", head: "crown_gold1", cloak: "blue" } }
   ];
   var LAYERS = ["cloak", "base", "boots", "legs", "body", "gloves", "hand1", "hand2", "hair", "head"];
-  var TUT_STEPS = ["add", "check", "rate", "xp", "done"];
+  // The guided tour, in order. "done" means finished or skipped.
+  var TUT_STEPS = ["add", "note", "noteSave", "check", "rate", "xp", "hero", "gear", "log", "entry", "menu", "end", "done"];
 
   /* ---------------- storage ---------------- */
   var bridge = window.Android || null;
@@ -234,13 +235,15 @@
     ["quests", "hero", "log"].forEach(function (k) { $("view-" + k).hidden = k !== v; });
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) { b.classList.toggle("active", b.dataset.view === v); });
     $("views").scrollTop = 0;
+    if (state.tut === "hero" && v === "hero") { state.tut = "gear"; save(); }
+    if (state.tut === "log" && v === "log") { state.tut = "entry"; save(); }
     render();
   }
 
   /* ---------------- actions ---------------- */
   function addQuest(text) {
     state.tasks.push({ id: uid(), text: text, note: "", created: Date.now(), done: false, rating: null, doneAt: null });
-    if (state.tut === "add") state.tut = "check";
+    if (state.tut === "add") state.tut = "note";
     save(); render();
   }
 
@@ -280,7 +283,11 @@
     var b = $("sheetBox"); b.textContent = ""; build(b); $("sheet").hidden = false; renderCoach();
     if (!b.contains(document.activeElement)) { var f = b.querySelector("input, button"); if (f) setTimeout(function () { if (!$("sheet").hidden && !b.contains(document.activeElement)) f.focus(); }, 60); }
   }
-  function closeSheet() { $("sheet").hidden = true; $("sheetBox").textContent = ""; renderCoach(); }
+  function closeSheet() {
+    $("sheet").hidden = true; $("sheetBox").textContent = "";
+    if (state.tut === "noteSave") { state.tut = "check"; save(); }
+    renderCoach();
+  }
   $("sheet").addEventListener("click", function (e) { if (e.target === $("sheet")) closeSheet(); });
 
   function button(label, cls, fn) { var b = el("button", "btn px small" + (cls ? " " + cls : ""), label); b.type = "button"; b.onclick = fn; return b; }
@@ -299,6 +306,7 @@
   }
 
   function openEdit(t) {
+    if (state.tut === "note") { state.tut = "noteSave"; save(); }
     openSheet(function (b) {
       b.appendChild(el("div", "px small dim", "QUEST"));
       var input = el("input"); input.type = "text"; input.maxLength = 300; input.value = t.text;
@@ -414,6 +422,7 @@
 
   // Android back button: close what's open, then go back to Quests, then let the app close.
   window.onBack = function () {
+    if (!$("welcome").hidden) return false;
     if (!$("creator").hidden) { if (!state.hero) return false; closeCreator(); return true; }
     if (!$("levelUp").hidden) { $("levelUp").hidden = true; renderCoach(); return true; }
     if (!$("sheet").hidden) { closeSheet(); return true; }
@@ -432,7 +441,7 @@
   var draft = null;
   function openCreator(first) {
     draft = JSON.parse(JSON.stringify(state.hero || DEFAULT_HERO));
-    $("crTitle").textContent = first ? "NEW HERO" : "EDIT HERO";
+    $("crTitle").textContent = first ? "CREATE YOUR HERO" : "EDIT HERO";
     $("crDone").textContent = first ? "START" : "SAVE";
     $("crCancel").hidden = first;
     $("crName").value = draft.name;
@@ -462,37 +471,77 @@
   $("crCancel").onclick = closeCreator;
   $("editHeroBtn").onclick = function () { openCreator(false); };
 
-  /* ---------------- tutorial ---------------- */
-  // Teaches the loop on the player's own first quest: add, tap the box, rate, see the XP.
+  /* ---------------- guided tour ---------------- */
+  // Runs on the player's own first quest, then shows each tab. Steps move on when the player
+  // does the thing (event) or taps OK (next). Skip ends it at any point; the menu replays it.
+  function q(sel) { return function () { return document.querySelector(sel); }; }
   var COACH = {
-    add: { text: "TYPE A QUEST, THEN TAP +", target: function () { return $("addForm"); } },
-    check: { text: "DONE WITH IT? TAP THE BOX.", target: function () { return document.querySelector(".quest .q-check"); } },
-    rate: { text: "HOW HARD WAS IT? 1 IS EASY, 5 IS HARD. THAT'S YOUR XP.", target: function () { return document.querySelector(".quest .rate"); } },
-    xp: { text: "XP FILLS THIS BAR. LEVEL UP FOR NEW GEAR.", target: function () { return document.querySelector(".hud"); }, ok: true }
+    add: { text: "TYPE A QUEST, THEN TAP +.", target: function () { return $("addForm"); } },
+    note: { text: "TAP YOUR QUEST TO OPEN IT.", target: q(".quest .q-text") },
+    noteSave: { text: "ADD NOTES HERE IF YOU WANT, LIKE A TICKET NUMBER. THEN SAVE.", target: q("#sheetBox textarea.notes"), inSheet: true },
+    check: { text: "DONE WITH IT? TAP THE BOX.", target: q(".quest .q-check") },
+    rate: { text: "HOW HARD WAS IT? 1 IS EASY, 5 IS HARD. THAT'S YOUR XP.", target: q(".quest .rate") },
+    xp: { text: "XP FILLS THIS BAR. EACH LEVEL NEEDS A LITTLE MORE.", target: q(".hud"), next: "hero" },
+    hero: { text: "TAP HERO TO SEE YOUR CHARACTER.", target: q('.tab[data-view="hero"]') },
+    gear: { text: "NEW GEAR UNLOCKS AT THESE LEVELS. EDIT HERO CHANGES YOUR LOOK.", target: function () { return $("gearGrid").parentNode; }, view: "hero", next: "log", scroll: true },
+    log: { text: "TAP LOG TO SEE WHAT YOU'VE FINISHED.", target: q('.tab[data-view="log"]'), view: "hero" },
+    entry: { text: "FINISHED QUESTS LAND HERE BY DAY. TAP ONE TO READ ITS NOTES. UNDO TAKES IT BACK.", target: q(".entry"), view: "log", next: "menu" },
+    menu: { text: "THE MENU HAS BACKUPS, HERO EDITS AND THIS TOUR.", target: function () { return $("settingsBtn"); }, view: "log", next: "end" },
+    end: { text: "NO DUE DATES. NO PENALTIES. FINISH QUESTS WHEN YOU CAN.", target: function () { return null; }, view: "quests", next: "done", last: true }
   };
+  var TOUR = TUT_STEPS.filter(function (s) { return COACH[s]; });
   function setTut(step) { state.tut = step; save(); renderCoach(); }
+
+  // Puts the tour back on track if the player wandered off (deleted the quest, restarted mid-step).
+  function repairTut() {
+    var t = state.tut, hasQuest = !!document.querySelector(".quest");
+    if ((t === "note" || t === "check") && view === "quests" && !hasQuest) t = "add";
+    if (t === "rate" && !rating) t = "check";
+    if (t === "noteSave" && $("sheet").hidden) t = "check";
+    if (t === "entry" && view === "log" && !document.querySelector(".entry")) t = "menu";
+    if (t !== state.tut) { state.tut = t; save(); }
+  }
+
   function renderCoach() {
     Array.prototype.forEach.call(document.querySelectorAll(".coach-on"), function (e) { e.classList.remove("coach-on"); });
-    var c = $("coach"), step = COACH[state.tut];
-    // Only while the hero exists, Quests is showing and nothing else is open.
-    if (!step || !state.hero || view !== "quests" || !$("creator").hidden || !$("sheet").hidden || !$("levelUp").hidden) { c.hidden = true; return; }
-    if (state.tut === "check" && !document.querySelector(".quest")) { state.tut = "add"; save(); step = COACH.add; }
+    var c = $("coach");
+    if (!state.hero || !$("creator").hidden || !$("welcome").hidden || !$("levelUp").hidden) { c.hidden = true; return; }
+    repairTut();
+    var step = COACH[state.tut];
+    if (!step || (step.view || "quests") !== view || (!$("sheet").hidden && !step.inSheet)) { c.hidden = true; return; }
     var target = step.target();
-    if (!target) { c.hidden = true; return; }
+    if (!target && !step.last) { c.hidden = true; return; }
     $("coachText").textContent = step.text;
-    $("coachOk").hidden = !step.ok;
-    $("coachSkip").hidden = !!step.ok; // last step: OK only
+    $("coachStep").textContent = (TOUR.indexOf(state.tut) + 1) + "/" + TOUR.length;
+    $("coachOk").hidden = !step.next;
+    $("coachSkip").hidden = !!step.last;
     c.hidden = false;
+    var vh = window.innerHeight;
+    if (!target) { c.style.top = Math.max(12, (vh - c.offsetHeight) / 2) + "px"; return; }
+    if (step.scroll) target.scrollIntoView({ block: "nearest" });
     target.classList.add("coach-on");
-    var r = target.getBoundingClientRect(), vh = window.innerHeight;
+    if (step.inSheet) { c.style.top = "12px"; return; } // the sheet fills the bottom; keep its fields visible
+    var r = target.getBoundingClientRect();
     if (r.top + r.height / 2 < vh / 2) c.style.top = Math.min(r.bottom + 16, vh - c.offsetHeight - 12) + "px";
     else c.style.top = Math.max(12, r.top - c.offsetHeight - 16) + "px";
   }
   $("coachSkip").onclick = function () { setTut("done"); };
-  $("coachOk").onclick = function () { setTut("done"); };
+  $("coachOk").onclick = function () {
+    var step = COACH[state.tut]; if (!step || !step.next) return;
+    if (step.next === "end") { state.tut = "end"; save(); show("quests"); return; }
+    setTut(step.next);
+  };
+
+  /* ---------------- title screen (first run) ---------------- */
+  function openWelcome() {
+    [0, 4, 8].forEach(function (tier, i) { drawDoll($("wDoll" + i), null, tier); });
+    $("welcome").hidden = false;
+    setTimeout(function () { $("wStart").focus(); }, 50);
+  }
+  $("wStart").onclick = function () { $("welcome").hidden = true; openCreator(true); };
   window.addEventListener("resize", renderCoach);
   $("views").addEventListener("scroll", renderCoach);
 
   show("quests");
-  if (!state.hero) openCreator(true);
+  if (!state.hero) { if (state.tasks.length) openCreator(true); else openWelcome(); }
 })();

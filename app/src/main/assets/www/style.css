@@ -189,7 +189,18 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
 /* Tutorial */
 .coach { position: fixed; left: 12px; right: 12px; z-index: 20; max-width: 616px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; border-color: var(--gold); }
 .coach[hidden] { display: none; }
-.coach-row { display: flex; justify-content: flex-end; gap: 10px; }
+.coach-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+#coachStep { margin-right: auto; }
+
+/* Title screen */
+.title-screen { background: #0c0d14; }
+.welcome-box { width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 12px; text-align: center; }
+.logo { margin: 0; font-size: 34px; line-height: 1.25; font-weight: 400; text-shadow: 4px 4px 0 var(--shadow), 0 0 0 var(--edge); letter-spacing: 0.06em; }
+.w-dolls { display: flex; gap: 12px; align-items: flex-end; }
+.w-dolls .doll { width: 96px; height: 96px; }
+.w-lines { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.w-lines p { margin: 0; line-height: 1.6; }
+.btn.start { min-width: 200px; font-size: 16px; border-color: var(--gold); color: var(--gold); }
 .coach-on { position: relative; z-index: 15; outline: 3px solid var(--gold); outline-offset: 3px; animation: blink 1.2s steps(2) infinite; }
 @keyframes blink { 50% { outline-color: transparent; } }
 

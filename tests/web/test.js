@@ -23,8 +23,14 @@ const check = (name, ok) => { console.log((ok ? "PASS " : "FAIL ") + name); if (
   const visible = sel => p.$eval(sel, e => !e.hidden).catch(() => false);
   const dollSrcs = sel => p.$$eval(sel + " img", is => is.map(i => i.getAttribute("src")));
 
-  // ---- First run: hero creator ----
-  check("creator opens on first run", await visible("#creator"));
+  // ---- First run: title screen, then hero creator ----
+  check("title screen opens on first run", await visible("#welcome") && !(await visible("#creator")));
+  check("title screen shows 3 heroes", (await p.$$("#welcome .doll")).length === 3 && (await dollSrcs("#wDoll2")).includes("img/doll/head/crown_gold1.png"));
+  check("back on title screen leaves the app", (await p.evaluate(() => window.onBack())) === false);
+  await p.screenshot({ path: SHOTS + "/w0_title.png" });
+  await p.click("#wStart");
+  check("creator opens after START", await visible("#creator") && !(await visible("#welcome")));
+  check("creator title", (await p.$eval("#crTitle", e => e.textContent)) === "CREATE YOUR HERO");
   check("first-run creator has no cancel", await p.$eval("#crCancel", e => e.hidden));
   check("back on first-run creator leaves the app", (await p.evaluate(() => window.onBack())) === false);
   await p.screenshot({ path: SHOTS + "/c0_creator.png" });
@@ -46,25 +52,50 @@ const check = (name, ok) => { console.log((ok ? "PASS " : "FAIL ") + name); if (
   check("creator closes", !(await visible("#creator")));
   check("HUD hero uses chosen look", (await dollSrcs("#hudHero")).includes("img/doll/base/human_f_s2.png"));
 
-  // ---- Tutorial on the first quest ----
+  // ---- Guided tour on the first quest ----
   const coach = () => p.$eval("#coachText", e => e.textContent);
+  const stepNo = () => p.$eval("#coachStep", e => e.textContent);
   const target = () => p.evaluate(() => { const t = document.querySelector(".coach-on"); return t ? (t.id || t.className) : ""; });
-  check("tutorial step 1 shows", await visible("#coach") && (await coach()).includes("TYPE A QUEST") && (await target()) === "addForm");
-  await p.screenshot({ path: SHOTS + "/t1_add.png" });
+  check("tour 1: add", await visible("#coach") && (await coach()).includes("TYPE A QUEST") && (await target()) === "addForm" && (await stepNo()) === "1/12");
+  await p.screenshot({ path: SHOTS + "/t01_add.png" });
   await add("Update the wiki page");
-  check("tutorial step 2 targets the box", (await coach()).includes("TAP THE BOX") && (await target()).includes("q-check"));
-  await p.screenshot({ path: SHOTS + "/t2_check.png" });
+  check("tour 2: open the quest", (await coach()).includes("TAP YOUR QUEST") && (await target()).includes("q-text"));
+  await p.screenshot({ path: SHOTS + "/t02_note.png" });
+  await p.click(".quest .q-text"); await wait(150);
+  check("tour 3: notes box, shown over the sheet", await visible("#coach") && (await coach()).includes("ADD NOTES") && (await target()).includes("notes"));
+  await p.screenshot({ path: SHOTS + "/t03_notesave.png" });
+  await p.type("#sheetBox textarea.notes", "Page 12");
+  await (await p.$$("#sheetBox .btn"))[1].click();
+  check("tour 4: tap the box", (await coach()).includes("TAP THE BOX") && (await target()).includes("q-check"));
   await p.click(".quest .q-check");
-  check("tutorial step 3 targets the rating", (await coach()).includes("1 IS EASY") && (await target()).includes("rate"));
-  await p.screenshot({ path: SHOTS + "/t3_rate.png" });
+  check("tour 5: rate", (await coach()).includes("1 IS EASY") && (await target()).includes("rate"));
+  await p.screenshot({ path: SHOTS + "/t05_rate.png" });
   const bubble = await p.$eval("#coach", e => e.getBoundingClientRect().toJSON());
   const rateBox = await p.$eval(".quest .rate", e => e.getBoundingClientRect().toJSON());
   check("bubble doesn't cover the rating buttons", bubble.top >= rateBox.bottom || bubble.bottom <= rateBox.top);
   await p.click(".rate .r2"); await wait(600);
-  check("tutorial step 4 points at the XP bar", (await coach()).includes("XP FILLS") && (await target()).includes("hud") && await visible("#coachOk"));
-  await p.screenshot({ path: SHOTS + "/t4_xp.png" });
+  check("tour 6: XP bar with OK", (await coach()).includes("XP FILLS") && (await target()).includes("hud") && await visible("#coachOk"));
+  await p.screenshot({ path: SHOTS + "/t06_xp.png" });
+  await p.click("#coachOk");
+  check("tour 7: hero tab", (await coach()).includes("TAP HERO") && (await target()).includes("tab"));
+  await p.screenshot({ path: SHOTS + "/t07_herotab.png" });
+  await p.click('.tab[data-view="hero"]');
+  check("tour 8: gear", (await coach()).includes("NEW GEAR") && (await target()).startsWith("win") && (await p.$eval(".coach-on", e => !!e.querySelector("#gearGrid"))) && await visible("#coachOk"));
+  await p.screenshot({ path: SHOTS + "/t08_gear.png" });
+  await p.click("#coachOk");
+  check("tour 9: log tab", (await coach()).includes("TAP LOG"));
+  await p.click('.tab[data-view="log"]');
+  check("tour 10: log entry", (await coach()).includes("LAND HERE") && (await target()).includes("entry"));
+  await p.screenshot({ path: SHOTS + "/t10_entry.png" });
+  await p.click("#coachOk");
+  check("tour 11: menu", (await coach()).includes("THE MENU") && (await target()) === "settingsBtn");
+  await p.screenshot({ path: SHOTS + "/t11_menu.png" });
+  await p.click("#coachOk");
+  check("tour 12: closing line, back on quests, no skip", (await coach()).includes("NO PENALTIES") && await visible("#view-quests") && !(await visible("#coachSkip")) && (await stepNo()) === "12/12");
+  await p.screenshot({ path: SHOTS + "/t12_end.png" });
   await p.click("#coachOk");
   check("tutorial finishes", !(await visible("#coach")) && (await p.$$(".coach-on")).length === 0);
+  check("tour quest kept its note", (await p.evaluate(() => JSON.parse(localStorage.getItem("questlog-data")).tasks[0].note)) === "Page 12");
   await p.reload();
   check("tutorial stays finished and hero kept after reload", !(await visible("#coach")) && !(await visible("#creator")) && (await dollSrcs("#hudHero")).includes("img/doll/hair/djinn2.png"));
 

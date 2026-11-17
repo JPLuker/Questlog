@@ -85,9 +85,22 @@
   </div>
 </div>
 
+<div id="welcome" class="overlay center title-screen" hidden>
+  <div class="welcome-box" role="dialog" aria-modal="true" aria-labelledby="wTitle">
+    <h1 id="wTitle" class="px gold logo">QUEST<br>LOG</h1>
+    <div class="w-dolls" aria-hidden="true"><div id="wDoll0" class="doll"></div><div id="wDoll1" class="doll"></div><div id="wDoll2" class="doll"></div></div>
+    <div class="win w-lines">
+      <p class="px small">YOUR TO-DO LIST, AS QUESTS.</p>
+      <p class="px small">FINISH ONE, RATE HOW HARD IT WAS, EARN THAT MUCH XP.</p>
+      <p class="px small">LEVEL UP. EARN GEAR. NOTHING IS EVER LATE.</p>
+    </div>
+    <button id="wStart" class="btn px start" type="button">START</button>
+  </div>
+</div>
+
 <div id="coach" class="win coach" role="status" aria-live="polite" hidden>
   <div id="coachText" class="px small"></div>
-  <div class="coach-row"><button id="coachSkip" class="btn px small" type="button">SKIP</button><button id="coachOk" class="btn px small" type="button" hidden>OK</button></div>
+  <div class="coach-row"><span id="coachStep" class="px small dim"></span><button id="coachSkip" class="btn px small" type="button">SKIP</button><button id="coachOk" class="btn px small" type="button" hidden>OK</button></div>
 </div>
 
 <script src="app.js"></script>

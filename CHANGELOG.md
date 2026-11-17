@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+- Title screen on first launch: the app's name, your hero at three gear stages, three lines on how it works, and START.
+- The tutorial is now a 12-step guided tour with a step counter. It runs on your first quest (add it, open it and add notes, tap the box, rate it, see the XP bar), then shows the Hero tab and gear, the Log and Undo, and the menu, and ends with "no due dates, no penalties". Skip any time; replay from the ☰ menu.
+
 ## 0.3.0
 - Notes on quests: tap a quest to open it and write notes (several lines, up to 4,000 characters). The first line shows under the quest in the list and the log.
 - Finished quests in the log open the same way, so notes stay readable after you're done.

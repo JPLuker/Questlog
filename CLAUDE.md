@@ -11,7 +11,7 @@ An Android to-do list with RPG levels. Joseph uses it as his work to-do list. Ty
 
 Each quest has `text` and an optional multi-line `note`; tapping a quest (list or log) opens it to edit both.
 
-First launch: hero creator (body, skin, hair, name), then a 4-step tutorial on the player's own first quest (`state.tut`: add → check → rate → xp → done). The hero is layered at runtime from `img/doll/` parts (`heroParts` in app.js); gear tiers are data in `TIERS`.
+First launch: title screen (`#welcome`), hero creator (body, skin, hair, name), then a 12-step guided tour (`state.tut`, order in `TUT_STEPS`, text and targets in `COACH`): add → note → noteSave → check → rate → xp → hero → gear → log → entry → menu → end → done. Steps advance when the player does the thing or taps OK; `repairTut` puts it back on track if they wander off. The hero is layered at runtime from `img/doll/` parts (`heroParts` in app.js); gear tiers are data in `TIERS`.
 
 A web UI (`app/src/main/assets/www`: index.html, style.css, app.js) in a WebView. `MainActivity.java` provides `window.Android.load/save/exportBackup/importBackup`. No androidx, no network, no permissions.
 

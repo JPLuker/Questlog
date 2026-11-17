@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Quest Log</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="win hud">
+    <img id="hudHero" class="sprite" src="img/hero/tier0.png" alt="">
+    <div class="hud-main">
+      <div class="hud-top"><span id="hudLevel" class="px">LV 1</span><span id="hudXp" class="px dim">0/10</span></div>
+      <div class="bar"><div id="hudBar" class="bar-fill"></div></div>
+    </div>
+    <button id="settingsBtn" class="icon-btn px" type="button" aria-label="Settings">☰</button>
+  </header>
+
+  <main id="views">
+    <section id="view-quests" class="view">
+      <form id="addForm" class="win add" autocomplete="off">
+        <input id="newQuest" type="text" maxlength="300" placeholder="New quest" enterkeyhint="done">
+        <button class="btn px" type="submit" aria-label="Add quest">+</button>
+      </form>
+      <ul id="questList" class="list"></ul>
+    </section>
+
+    <section id="view-hero" class="view" hidden>
+      <div class="win hero-card">
+        <img id="heroBig" class="sprite big" src="img/hero/tier0.png" alt="Your hero">
+        <div id="heroLevel" class="px title">LV 1</div>
+        <div class="bar wide"><div id="heroBar" class="bar-fill"></div></div>
+        <div id="heroNext" class="px dim small"></div>
+      </div>
+      <div class="win stats">
+        <div><span class="px dim small">TOTAL XP</span><b id="stTotal" class="px">0</b></div>
+        <div><span class="px dim small">QUESTS</span><b id="stDone" class="px">0</b></div>
+        <div><span class="px dim small">TODAY</span><b id="stToday" class="px">0</b></div>
+        <div><span class="px dim small">BEST DAY</span><b id="stBest" class="px">0</b></div>
+      </div>
+      <div class="win">
+        <div class="px dim small label">GEAR</div>
+        <div id="gearGrid" class="gear"></div>
+      </div>
+    </section>
+
+    <section id="view-log" class="view" hidden>
+      <div id="logList"></div>
+    </section>
+  </main>
+
+  <nav class="win tabs">
+    <button class="tab active" data-view="quests" type="button"><img src="img/scroll.png" alt=""><span class="px">QUESTS</span></button>
+    <button class="tab" data-view="hero" type="button"><img id="tabHero" src="img/hero/tier0.png" alt=""><span class="px">HERO</span></button>
+    <button class="tab" data-view="log" type="button"><img src="img/book.png" alt=""><span class="px">LOG</span></button>
+  </nav>
+</div>
+
+<div id="sheet" class="overlay" hidden>
+  <div class="win sheet-box" id="sheetBox" role="dialog" aria-modal="true"></div>
+</div>
+
+<div id="levelUp" class="overlay center" hidden>
+  <div class="win levelup-box" role="alertdialog" aria-live="assertive">
+    <div class="px title gold">LEVEL UP!</div>
+    <img id="luHero" class="sprite big" src="img/hero/tier0.png" alt="">
+    <div id="luLevel" class="px title">LV 2</div>
+    <div id="luGear" class="px small gold" hidden>NEW GEAR</div>
+    <button id="luOk" class="btn px" type="button">OK</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

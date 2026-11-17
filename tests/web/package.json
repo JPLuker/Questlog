@@ -1,0 +1,11 @@
+{
+  "name": "questlog-web-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node version_check.js && node test.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  },
+  "private": true
+}

@@ -1,0 +1,173 @@
+name: Build Android
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Versions
+        run: node --version && google-chrome --version
+      - name: Web UI tests
+        working-directory: tests/web
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          SHOTS_DIR: ${{ runner.temp }}/screenshots
+        run: npm ci && npm test
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: ignore
+
+  android:
+    needs: web-tests
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      KEYSTORE_B64: ${{ secrets.QUESTLOG_ANDROID_KEYSTORE_B64 }}
+      QUESTLOG_ANDROID_STORE_PASSWORD: ${{ secrets.QUESTLOG_ANDROID_STORE_PASSWORD }}
+      QUESTLOG_ANDROID_KEY_PASSWORD: ${{ secrets.QUESTLOG_ANDROID_KEY_PASSWORD }}
+      QUESTLOG_ANDROID_KEY_ALIAS: ${{ secrets.QUESTLOG_ANDROID_KEY_ALIAS }}
+      CERT_SHA256: ${{ secrets.QUESTLOG_ANDROID_CERT_SHA256 }}
+      PACKAGE_ID: com.jpluker.questlog
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check signing secrets
+        run: |
+          missing=()
+          for name in KEYSTORE_B64 QUESTLOG_ANDROID_STORE_PASSWORD QUESTLOG_ANDROID_KEY_PASSWORD QUESTLOG_ANDROID_KEY_ALIAS CERT_SHA256; do
+            [[ -n "${!name}" ]] || missing+=("$name")
+          done
+          if (( ${#missing[@]} )); then
+            echo "::error::Signing secrets missing (${missing[*]}). Run android/scripts/setup-signing.sh on a trusted computer."
+            exit 1
+          fi
+          [[ "$CERT_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::QUESTLOG_ANDROID_CERT_SHA256 isn't a SHA-256 fingerprint. Run android/scripts/setup-signing.sh again."; exit 1; }
+
+      - name: Work out the version
+        id: version
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::VERSION file holds '$version', not x.y.z"; exit 1; }
+          untested=false
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            tag="$GITHUB_REF_NAME"
+            base="${tag%-untested-android}"
+            [[ "$base" != "$tag" ]] && untested=true
+            [[ "$base" == "v$version" ]] || { echo "::error::Tag $tag doesn't match VERSION $version"; exit 1; }
+          fi
+          # Android hasn't been run by a person yet, so every build is labelled UNTESTED (RELEASES.md 2).
+          # Once a build is confirmed on a phone, plain vX.Y.Z tags can carry the tested build.
+          suffix=""; [[ "$untested" == true || "$GITHUB_REF_TYPE" != "tag" ]] && suffix="-UNTESTED"
+          {
+            echo "version=$version"
+            echo "untested=$untested"
+            echo "apk=QuestLog-$version-Android-universal$suffix.apk"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
+        with:
+          gradle-version: "8.9"
+
+      - name: Versions
+        run: java -version && gradle --version
+
+      - name: Build signed APK
+        run: |
+          keystore="$RUNNER_TEMP/questlog-release.jks"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$keystore"
+          QUESTLOG_KEYSTORE_FILE="$keystore" gradle :app:assembleRelease --no-daemon --stacktrace
+          rm -f "$keystore"
+
+      - name: Check the APK (signer, package, version, not debuggable)
+        id: check
+        run: |
+          apk="app/build/outputs/apk/release/app-release.apk"
+          [[ -s "$apk" ]] || { echo "::error::No signed APK at $apk"; exit 1; }
+          bt="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          echo "build-tools: $bt"
+
+          certs="$("$bt/apksigner" verify --verbose --print-certs "$apk")"
+          signers="$(grep -cE '^Signer #[0-9]+ certificate SHA-256 digest: [0-9a-f]{64}$' <<< "$certs" || true)"
+          [[ "$signers" == "1" ]] || { echo "::error::Expected exactly one signer, found $signers"; exit 1; }
+          got="$(sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p' <<< "$certs")"
+          [[ "$got" == "$CERT_SHA256" ]] || { echo "::error::APK signer $got doesn't match the pinned fingerprint"; exit 1; }
+
+          badging="$("$bt/aapt2" dump badging "$apk")"
+          grep -qE "^package: name='$PACKAGE_ID' versionCode='$GITHUB_RUN_NUMBER' versionName='${{ steps.version.outputs.version }}'" <<< "$badging" \
+            || { echo "::error::Package id or version is wrong:"; head -n 1 <<< "$badging"; exit 1; }
+          if grep -q "application-debuggable" <<< "$badging"; then echo "::error::APK is debuggable"; exit 1; fi
+
+          mkdir -p dist
+          cp "$apk" "dist/${{ steps.version.outputs.apk }}"
+          (cd dist && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.version.outputs.apk }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          UNTESTED: ${{ steps.version.outputs.untested }}
+          APK: ${{ steps.version.outputs.apk }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/$tag"
+          notes="$RUNNER_TEMP/notes.md"
+          if [[ "$UNTESTED" == true ]]; then
+            title="UNTESTED — Android build for v$VERSION"
+            {
+              echo "> ⚠️ **UNTESTED BUILD.** These Android builds were produced automatically and have not been run by a person. They may not install, launch, or work correctly. For tested builds, use [v$VERSION](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION)."
+              echo
+            } > "$notes"
+            flags=(--prerelease --latest=false)
+          else
+            title="Quest Log v$VERSION"
+            : > "$notes"
+            flags=(--latest)
+          fi
+          awk -v v="## $VERSION" '$0 == v { f = 1; next } /^## / { f = 0 } f' CHANGELOG.md >> "$notes"
+          {
+            echo
+            echo "## Downloads"
+            echo "**Android:** [APK]($url/$APK)"
+          } >> "$notes"
+          gh release create "$tag" dist/* --title "$title" --notes-file "$notes" --verify-tag "${flags[@]}"
+
+          # Check what was published (RELEASES.md 6.2).
+          gh release view "$tag" --json assets,isPrerelease --jq '.' > "$RUNNER_TEMP/release.json"
+          for f in dist/*; do
+            name="$(basename "$f")"
+            size="$(jq -r --arg n "$name" '.assets[] | select(.name == $n) | .size' "$RUNNER_TEMP/release.json")"
+            [[ -n "$size" && "$size" -gt 0 ]] || { echo "::error::$name is missing or empty on the release"; exit 1; }
+          done
+          [[ "$(jq -r .isPrerelease "$RUNNER_TEMP/release.json")" == "$UNTESTED" ]] || { echo "::error::Pre-release flag is wrong"; exit 1; }
+          echo "Release $tag checked."

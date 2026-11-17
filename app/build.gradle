@@ -1,0 +1,54 @@
+plugins {
+    id "com.android.application"
+}
+
+// The version lives in one place: the VERSION file at the repo root (VERSIONING.md 4.2).
+def appVersion = rootProject.file("VERSION").text.trim()
+// Rises on every CI build so each APK installs over the last one.
+def appVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
+android {
+    namespace "com.jpluker.questlog"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.jpluker.questlog"
+        minSdk 26
+        targetSdk 34
+        versionCode appVersionCode
+        versionName appVersion
+    }
+
+    signingConfigs {
+        release {
+            // Filled from the QUESTLOG_ANDROID_* secrets in CI. No fallback key (RELEASES.md 6.1).
+            def ks = System.getenv("QUESTLOG_KEYSTORE_FILE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv("QUESTLOG_ANDROID_STORE_PASSWORD")
+                keyAlias System.getenv("QUESTLOG_ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("QUESTLOG_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            debuggable false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// A release build without the signing key fails here instead of producing an unsigned APK.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(":app:assembleRelease") && !System.getenv("QUESTLOG_KEYSTORE_FILE")) {
+        throw new GradleException("No signing key. Run android/scripts/setup-signing.sh on a trusted computer.")
+    }
+}

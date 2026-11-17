@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.1.0";
+  var VERSION = "0.1.1";
   var TIERS = [1, 3, 5, 8, 11, 15, 20, 25, 30]; // level each hero look unlocks at (img/hero/tierN.png)
   var KEY = "questlog-data";
 

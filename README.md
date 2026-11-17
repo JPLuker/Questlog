@@ -20,6 +20,8 @@ Signing is set up once, on a trusted computer:
 gh repo clone JPLuker/Questlog && cd Questlog && bash android/scripts/setup-signing.sh
 ```
 
+Every push to `main` also makes a **test build** (Actions → the run → Artifacts). It installs as "Quest Log TEST" beside the real app and uses a throwaway key, so a newer test build needs the old one uninstalled first. Export a backup from the menu before you do.
+
 Releases come from tags. Android builds are labelled untested until one has been run on a phone (RELEASES.md Part 2), so the first tag is `v0.1.0-untested-android`.
 
 ## How it's made

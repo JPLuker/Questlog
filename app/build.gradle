@@ -33,6 +33,13 @@ android {
     }
 
     buildTypes {
+        // Test builds: separate package id, so they install beside the real app and never
+        // touch its data. CI signs them with a throwaway key, so each new test build needs the
+        // old test app uninstalled first. Export a backup from the menu before doing that.
+        debug {
+            applicationIdSuffix ".test"
+            versionNameSuffix "-test"
+        }
         release {
             minifyEnabled false
             debuggable false

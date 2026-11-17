@@ -29,6 +29,7 @@ A web UI (`app/src/main/assets/www`: index.html, style.css, app.js) in a WebView
 - Name: Quest Log (working name; Joseph may rename it)
 - Package: `com.jpluker.questlog`
 - Signing secrets: `QUESTLOG_ANDROID_*`, set by `android/scripts/setup-signing.sh`
+- Test builds: package `com.jpluker.questlog.test`, named "Quest Log TEST", throwaway key, Actions artifact only (never a release)
 
 ## Deviations
 - **Look:** retro pixel RPG (JRPG navy windows, pixel fonts), chosen by Joseph. Not DESIGN.md Part B. The window frames, bars and buttons are drawn in CSS; they're functional UI, not art.

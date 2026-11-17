@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Test builds install beside the real app (different package id), so the name says so. -->
+    <string name="app_name">Quest Log TEST</string>
+</resources>

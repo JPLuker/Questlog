@@ -34,6 +34,52 @@ jobs:
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: ignore
 
+  # A test APK anyone can try before the signing key exists. Not a release build:
+  # separate package id (com.jpluker.questlog.test), throwaway key, artifact only.
+  test-build:
+    needs: web-tests
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
+        with:
+          gradle-version: "8.9"
+      - name: Versions
+        run: java -version && gradle --version
+      - name: Build test APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Check and package
+        id: pkg
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          [[ -s "$apk" ]] || { echo "::error::No test APK at $apk"; exit 1; }
+          bt="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          badging="$("$bt/aapt2" dump badging "$apk")"
+          head -n 1 <<< "$badging"
+          grep -q "^package: name='com.jpluker.questlog.test' versionCode='$GITHUB_RUN_NUMBER' versionName='$version-test'" <<< "$badging" \
+            || { echo "::error::Test APK has the wrong package id or version"; exit 1; }
+          name="QuestLog-$version-Android-universal-TEST-build$GITHUB_RUN_NUMBER-UNTESTED.apk"
+          mkdir -p dist && cp "$apk" "dist/$name"
+          {
+            echo "Quest Log TEST build $GITHUB_RUN_NUMBER (version $version, commit $GITHUB_SHA)"
+            echo "UNTESTED test build, signed with a throwaway key. Not a release."
+            echo "Installs as \"Quest Log TEST\" beside the real app. To install a newer test build,"
+            echo "export a backup from the menu, uninstall the old test app, then install and import."
+          } > dist/TEST_BUILD_README.txt
+          (cd dist && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.pkg.outputs.name }}
+          path: dist/*
+          if-no-files-found: error
+
   android:
     needs: web-tests
     if: github.event_name != 'pull_request'
@@ -51,18 +97,27 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Check signing secrets
+        id: secrets
         run: |
           missing=()
           for name in KEYSTORE_B64 QUESTLOG_ANDROID_STORE_PASSWORD QUESTLOG_ANDROID_KEY_PASSWORD QUESTLOG_ANDROID_KEY_ALIAS CERT_SHA256; do
             [[ -n "${!name}" ]] || missing+=("$name")
           done
           if (( ${#missing[@]} )); then
-            echo "::error::Signing secrets missing (${missing[*]}). Run android/scripts/setup-signing.sh on a trusted computer."
-            exit 1
+            # Tags and manual runs must produce a signed build; plain pushes skip until the key exists.
+            if [[ "$GITHUB_REF_TYPE" == "tag" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+              echo "::error::Signing secrets missing (${missing[*]}). Run android/scripts/setup-signing.sh on a trusted computer."
+              exit 1
+            fi
+            echo "::notice::No signing key yet, so no signed APK. Run android/scripts/setup-signing.sh on a trusted computer. The test build job still ran."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
           [[ "$CERT_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::QUESTLOG_ANDROID_CERT_SHA256 isn't a SHA-256 fingerprint. Run android/scripts/setup-signing.sh again."; exit 1; }
 
       - name: Work out the version
+        if: steps.secrets.outputs.ready == 'true'
         id: version
         run: |
           version="$(tr -d '[:space:]' < VERSION)"
@@ -84,18 +139,22 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        if: steps.secrets.outputs.ready == 'true'
         with:
           distribution: temurin
           java-version: "17"
 
       - uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
+        if: steps.secrets.outputs.ready == 'true'
         with:
           gradle-version: "8.9"
 
       - name: Versions
+        if: steps.secrets.outputs.ready == 'true'
         run: java -version && gradle --version
 
       - name: Build signed APK
+        if: steps.secrets.outputs.ready == 'true'
         run: |
           keystore="$RUNNER_TEMP/questlog-release.jks"
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$keystore"
@@ -103,6 +162,7 @@ jobs:
           rm -f "$keystore"
 
       - name: Check the APK (signer, package, version, not debuggable)
+        if: steps.secrets.outputs.ready == 'true'
         id: check
         run: |
           apk="app/build/outputs/apk/release/app-release.apk"
@@ -126,13 +186,14 @@ jobs:
           (cd dist && sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: steps.secrets.outputs.ready == 'true'
         with:
           name: ${{ steps.version.outputs.apk }}
           path: dist/*
           if-no-files-found: error
 
       - name: Publish release
-        if: github.ref_type == 'tag'
+        if: steps.secrets.outputs.ready == 'true' && github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}

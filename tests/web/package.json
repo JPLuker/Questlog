@@ -5,7 +5,7 @@
     "test": "node version_check.js && node test.js"
   },
   "dependencies": {
-    "puppeteer-core": "^23.11.1"
+    "puppeteer-core": "^25.18.1"
   },
   "private": true
 }
